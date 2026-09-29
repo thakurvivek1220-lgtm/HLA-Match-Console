@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>HLA Match Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4F6F5;
+    --surface: #FFFFFF;
+    --surface-2: #EDF1EF;
+    --ink: #16232B;
+    --ink-dim: #5B6B70;
+    --line: #D7DEDC;
+    --line-strong: #B9C4C1;
+    --accent: #0F7A6C;
+    --accent-ink: #063F37;
+    --accent-bg: #E4F2EE;
+    --alert: #B3262A;
+    --alert-bg: #FBEAE9;
+    --warn: #A15A08;
+    --warn-bg: #FBF1E1;
+    --radius-sm: 3px;
+    --radius-md: 6px;
+    --shadow: none;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E1614;
+      --surface: #131E1C;
+      --surface-2: #182420;
+      --ink: #E9F1EE;
+      --ink-dim: #93A6A0;
+      --line: #263531;
+      --line-strong: #34473F;
+      --accent: #4FD9C0;
+      --accent-ink: #BFF3E7;
+      --accent-bg: #163430;
+      --alert: #FF7A6E;
+      --alert-bg: #3A1D1B;
+      --warn: #F2AE4C;
+      --warn-bg: #362A15;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1614;
+    --surface: #131E1C;
+    --surface-2: #182420;
+    --ink: #E9F1EE;
+    --ink-dim: #93A6A0;
+    --line: #263531;
+    --line-strong: #34473F;
+    --accent: #4FD9C0;
+    --accent-ink: #BFF3E7;
+    --accent-bg: #163430;
+    --alert: #FF7A6E;
+    --alert-bg: #3A1D1B;
+    --warn: #F2AE4C;
+    --warn-bg: #362A15;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    margin: 0;
+    font-family: "Space Grotesk", "Segoe UI", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    padding: 32px 20px 64px;
+  }
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+
+  /* ---------- header ---------- */
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 22px;
+    margin-bottom: 28px;
+  }
+  header.top h1 {
+    font-size: 26px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  header.top p {
+    margin: 0;
+    color: var(--ink-dim);
+    font-size: 14.5px;
+    max-width: 46ch;
+    line-height: 1.5;
+  }
+  .theme-toggle {
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink-dim);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .theme-toggle:hover { color: var(--ink); border-color: var(--ink-dim); }
+
+  /* ---------- section shell ---------- */
+  section.block {
+    margin-bottom: 30px;
+  }
+  .block-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .block-head h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .block-head .count {
+    color: var(--ink-dim);
+    font-size: 13px;
+  }
+
+  /* ---------- donor cards ---------- */
+  .donor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+  }
+  .donor-card {
+    position: relative;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    padding: 13px 14px 14px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .donor-card[data-active="true"] {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+  .donor-card .tag {
+    font-size: 11px;
+    color: var(--ink-dim);
+    margin-bottom: 6px;
+  }
+  .donor-card[data-active="true"] .tag { color: var(--accent-ink); }
+  .donor-card .name {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .chip {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 2px 8px;
+    color: var(--ink-dim);
+    background: var(--surface);
+  }
+  .donor-card[data-active="true"] .chip {
+    border-color: #9FCFC4;
+    color: var(--accent-ink);
+    background: var(--surface);
+  }
+  .blood-chip {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: 12px;
+    border-radius: 999px;
+    padding: 2px 9px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+  }
+
+  details.custom-donor {
+    margin-top: 10px;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+  }
+  details.custom-donor summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink-dim);
+    list-style: none;
+  }
+  details.custom-donor summary::-webkit-details-marker { display: none; }
+  details.custom-donor summary:before { content: "+ "; }
+  details.custom-donor[open] summary:before { content: "− "; }
+
+  /* ---------- form grid ---------- */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px 12px;
+    margin-top: 10px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-size: 11.5px;
+    color: var(--ink-dim);
+  }
+  .field input, .field select {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    padding: 7px 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink);
+    width: 100%;
+  }
+  .field input:focus, .field select:focus, button:focus-visible, .donor-card:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .field.slider input[type="range"] { padding: 0; border: none; accent-color: var(--accent); }
+  .field .slider-val { font-size: 12px; color: var(--ink-dim); }
+
+  /* ---------- candidate rows ---------- */
+  .candidate {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .candidate-row {
+    display: grid;
+    grid-template-columns: 34px 1fr auto auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    cursor: pointer;
+  }
+  .rank {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-dim);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .candidate:first-child .rank {
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    background: var(--accent-bg);
+  }
+  .cand-name { font-weight: 500; font-size: 14.5px; }
+  .cand-sub { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+  .mismatch-dots { display: flex; gap: 3px; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+  }
+  .dot.filled { background: var(--warn); border-color: var(--warn); }
+  .score {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: 14px;
+    text-align: right;
+    min-width: 58px;
+  }
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--ink-dim);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 6px;
+  }
+  .remove-btn:hover { color: var(--alert); }
+  .candidate-detail {
+    display: none;
+    border-top: 1px solid var(--line);
+    padding: 12px 14px 14px 58px;
+    background: var(--surface-2);
+    font-size: 12.5px;
+  }
+  .candidate.open .candidate-detail { display: block; }
+  .candidate.open .chevron { transform: rotate(90deg); }
+  .chevron {
+    color: var(--ink-dim);
+    font-size: 11px;
+    transition: transform .12s ease;
+    transform-origin: center;
+  }
+  .breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px 16px;
+    margin-bottom: 10px;
+  }
+  .breakdown-grid div span.k { display: block; color: var(--ink-dim); font-size: 11px; }
+  .breakdown-grid div span.v { font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+  .loci-line { color: var(--ink-dim); }
+  .loci-line .mono { color: var(--ink); }
+
+  .empty-note {
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    color: var(--ink-dim);
+    font-size: 13.5px;
+    text-align: center;
+  }
+
+  /* ---------- excluded ---------- */
+  .excluded-item {
+    border: 1px solid var(--alert);
+    background: var(--alert-bg);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .excluded-item .cand-name { color: var(--ink); }
+  .excluded-item ul { margin: 6px 0 0; padding-left: 18px; color: var(--alert); }
+  .excluded-item li { margin-bottom: 2px; }
+
+  /* ---------- add candidate ---------- */
+  .add-panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    padding: 14px 16px 16px;
+  }
+  .add-panel summary {
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    list-style: none;
+  }
+  .add-panel summary::-webkit-details-marker { display: none; }
+  .add-panel summary:before { content: "+ "; color: var(--accent); }
+  .add-panel[open] summary:before { content: "− "; }
+  .add-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  button.primary {
+    background: var(--accent);
+    color: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.primary:hover { filter: brightness(0.94); }
+  button.ghost {
+    background: none;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-dim);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button.ghost:hover { color: var(--ink); }
+  .form-err { color: var(--alert); font-size: 12.5px; margin-top: 8px; display: none; }
+
+  /* ---------- how it works ---------- */
+  .how {
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    line-height: 1.7;
+  }
+  .how h2 { font-size: 15px; color: var(--ink); font-weight: 600; margin: 0 0 10px;}
+  .how code {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+  .how ul { padding-left: 18px; margin: 8px 0; }
+  .how li { margin-bottom: 4px; }
+
+  .table-scroll { overflow-x: auto; }
+
+  footer.note {
+    margin-top: 30px;
+    font-size: 12px;
+    color: var(--ink-dim);
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+  }
+
+  @media (max-width: 520px) {
+    .candidate-row { grid-template-columns: 28px 1fr auto; }
+    .mismatch-dots { display: none; }
+    .score { min-width: 48px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>HLA Match Console</h1>
+      <p>Score a donor offer against the waitlist: HLA mismatch, blood-type
+      safety, and priority — same logic as the Python engine, running live.</p>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button">Dark mode</button>
+  </header>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Donor offer</h2>
+    </div>
+    <div class="donor-grid" id="donorGrid"></div>
+
+    <details class="custom-donor" id="customDonorDetails">
+      <summary>Use a custom donor instead</summary>
+      <div class="form-grid" id="customDonorForm">
+        <div class="field">
+          <label for="cdBlood">Blood type</label>
+          <select id="cdBlood">
+            <option>O+</option><option>O-</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+          </select>
+        </div>
+        <div class="field"><label for="cdA1">HLA-A (1)</label><input id="cdA1" value="A1" /></div>
+        <div class="field"><label for="cdA2">HLA-A (2)</label><input id="cdA2" value="A2" /></div>
+        <div class="field"><label for="cdB1">HLA-B (1)</label><input id="cdB1" value="B7" /></div>
+        <div class="field"><label for="cdB2">HLA-B (2)</label><input id="cdB2" value="B8" /></div>
+        <div class="field"><label for="cdDR1">HLA-DR (1)</label><input id="cdDR1" value="DR3" /></div>
+        <div class="field"><label for="cdDR2">HLA-DR (2)</label><input id="cdDR2" value="DR4" /></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Ranked candidates</h2>
+      <span class="count" id="rankedCount"></span>
+    </div>
+    <div id="rankedList"></div>
+  </section>
+
+  <section class="block" id="excludedSection">
+    <div class="block-head">
+      <h2>On hold</h2>
+      <span class="count" id="excludedCount"></span>
+    </div>
+    <div id="excludedList"></div>
+  </section>
+
+  <section class="block">
+    <details class="add-panel" id="addPanel">
+      <summary>Add a candidate to the waitlist</summary>
+      <div class="form-grid">
+        <div class="field"><label for="rName">Name</label><input id="rName" placeholder="e.g. Recipient 6" /></div>
+        <div class="field">
+          <label for="rBlood">Blood type</label>
+          <select id="rBlood">
+            <option>O+</option><option>O-</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+          </select>
+        </div>
+        <div class="field"><label for="rA1">HLA-A (1)</label><input id="rA1" placeholder="A1" /></div>
+        <div class="field"><label for="rA2">HLA-A (2)</label><input id="rA2" placeholder="A2" /></div>
+        <div class="field"><label for="rB1">HLA-B (1)</label><input id="rB1" placeholder="B7" /></div>
+        <div class="field"><label for="rB2">HLA-B (2)</label><input id="rB2" placeholder="B8" /></div>
+        <div class="field"><label for="rDR1">HLA-DR (1)</label><input id="rDR1" placeholder="DR3" /></div>
+        <div class="field"><label for="rDR2">HLA-DR (2)</label><input id="rDR2" placeholder="DR4" /></div>
+        <div class="field"><label for="rWait">Waitlist since</label><input id="rWait" type="date" /></div>
+        <div class="field slider">
+          <label for="rUrgency">Medical urgency (<span class="slider-val" id="rUrgencyVal">50</span>/100)</label>
+          <input id="rUrgency" type="range" min="0" max="100" value="50" />
+        </div>
+        <div class="field slider">
+          <label for="rPra">PRA (<span class="slider-val" id="rPraVal">10</span>%)</label>
+          <input id="rPra" type="range" min="0" max="100" value="10" />
+        </div>
+        <div class="field">
+          <label for="rPediatric">Pediatric candidate</label>
+          <select id="rPediatric"><option value="false">No</option><option value="true">Yes</option></select>
+        </div>
+      </div>
+      <div class="add-actions">
+        <button class="primary" type="button" id="addCandidateBtn">Add to waitlist</button>
+        <button class="ghost" type="button" id="resetBtn">Reset sample data</button>
+      </div>
+      <div class="form-err" id="formErr"></div>
+    </details>
+  </section>
+
+  <section class="how">
+    <h2>How ranking works</h2>
+    <p>Every eligible candidate gets a priority score built from four parts:</p>
+    <ul>
+      <li><strong>HLA match</strong> — <code>12</code> points per avoided mismatch, out of 6 possible.</li>
+      <li><strong>Time waiting</strong> — <code>1.5</code> points per month on the list, capped at <code>100</code>.</li>
+      <li><strong>Medical urgency</strong> — the 0–100 urgency score × <code>0.6</code>.</li>
+      <li><strong>Pediatric bonus</strong> — a flat <code>+40</code> for pediatric candidates.</li>
+    </ul>
+    <p>Before scoring, a candidate is checked for two hard stops that override
+    any score: an <strong>ABO-incompatible</strong> blood type, or a
+    <strong>PRA of 80% or higher</strong> (a stand-in for a high-risk
+    crossmatch). Either one moves the candidate to "on hold" instead of the
+    ranked list. These weights are a simplified stand-in for this project —
+    not a real clinical allocation policy.</p>
+  </section>
+
+  <footer class="note">
+    Demo data only — no real patient information. Mirrors the scoring logic
+    in <span class="mono">match_calculator.py</span>, <span class="mono">priority_scorer.py</span>
+    and <span class="mono">waitlist_ranker.py</span> from the Python project.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- domain logic (mirrors the Python modules) ---------------- */
+
+  var RECIPIENT_CAN_ACCEPT = {
+    O: ["O"],
+    A: ["O", "A"],
+    B: ["O", "B"],
+    AB: ["O", "A", "B", "AB"]
+  };
+
+  function parseBloodType(raw) {
+    var cleaned = raw.trim().toUpperCase();
+    var rh = cleaned.slice(-1) === "+";
+    var group = cleaned.slice(0, -1);
+    return { group: group, rh: rh };
+  }
+
+  function isAboCompatible(donorGroup, recipientGroup) {
+    return RECIPIENT_CAN_ACCEPT[recipientGroup].indexOf(donorGroup) !== -1;
+  }
+
+  var HIGH_PRA_THRESHOLD = 80;
+  var MAX_MISMATCHES = 6;
+
+  function countLocusMismatches(donorAlleles, recipientAlleles) {
+    var remaining = recipientAlleles.slice();
+    var mismatches = 0;
+    donorAlleles.forEach(function (allele) {
+      var idx = remaining.indexOf(allele);
+      if (idx !== -1) {
+        remaining.splice(idx, 1);
+      } else {
+        mismatches += 1;
+      }
+    });
+    return mismatches;
+  }
+
+  function countMismatches(donor, recipient) {
+    var loci = ["hlaA", "hlaB", "hlaDr"];
+    var labels = { hlaA: "HLA-A", hlaB: "HLA-B", hlaDr: "HLA-DR" };
+    var breakdown = {};
+    var total = 0;
+    loci.forEach(function (locus) {
+      var m = countLocusMismatches(donor[locus], recipient[locus]);
+      breakdown[labels[locus]] = m;
+      total += m;
+    });
+    return { mismatches: total, breakdown: breakdown };
+  }
+
+  function findContraindications(donor, recipient) {
+    var reasons = [];
+    if (!isAboCompatible(donor.bloodGroup, recipient.bloodGroup)) {
+      reasons.push("ABO incompatible: donor is " + donor.bloodGroup + ", recipient is " + recipient.bloodGroup);
+    }
+    if (recipient.pra >= HIGH_PRA_THRESHOLD) {
+      reasons.push("High sensitization risk: recipient PRA is " + recipient.pra + "%, positive crossmatch likely (threshold " + HIGH_PRA_THRESHOLD + "%)");
+    }
+    return reasons;
+  }
+
+  var POINTS_PER_AVOIDED_MISMATCH = 12;
+  var POINTS_PER_MONTH_WAITING = 1.5;
+  var MAX_WAIT_POINTS = 100;
+  var PEDIATRIC_BONUS = 40;
+  var URGENCY_WEIGHT = 0.6;
+  var MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+  function round2(x) { return Math.round(x * 100) / 100; }
+
+  function daysOnWaitlist(recipient) {
+    var today = new Date();
+    var start = new Date(recipient.waitlistDate + "T00:00:00");
+    var days = Math.floor((today - start) / MS_PER_DAY);
+    return Math.max(days, 0);
+  }
+
+  function waitPoints(recipient) {
+    var months = daysOnWaitlist(recipient) / 30;
+    return Math.min(months * POINTS_PER_MONTH_WAITING, MAX_WAIT_POINTS);
+  }
+
+  function scoreBreakdown(matchResult, recipient) {
+    var avoided = MAX_MISMATCHES - matchResult.mismatches;
+    var hla = avoided * POINTS_PER_AVOIDED_MISMATCH;
+    var wait = round2(waitPoints(recipient));
+    var urgency = round2(recipient.urgency * URGENCY_WEIGHT);
+    var pediatric = recipient.pediatric ? PEDIATRIC_BONUS : 0;
+    return {
+      hla: hla, wait: wait, urgency: urgency, pediatric: pediatric,
+      total: round2(hla + wait + urgency + pediatric)
+    };
+  }
+
+  function rankCandidates(donor, recipients) {
+    var ranked = [];
+    var excluded = [];
+    recipients.forEach(function (recipient) {
+      var reasons = findContraindications(donor, recipient);
+      if (reasons.length) {
+        excluded.push({ recipient: recipient, reasons: reasons });
+        return;
+      }
+      var matchResult = countMismatches(donor, recipient);
+      var breakdown = scoreBreakdown(matchResult, recipient);
+      ranked.push({ recipient: recipient, mismatches: matchResult.mismatches, loci: matchResult.breakdown, breakdown: breakdown });
+    });
+    ranked.sort(function (a, b) { return b.breakdown.total - a.breakdown.total; });
+    return { ranked: ranked, excluded: excluded };
+  }
+
+  /* ---------------- sample data (mirrors sample_data.py) ---------------- */
+
+  function donor(id, name, blood, hlaA, hlaB, hlaDr) {
+    var bt = parseBloodType(blood);
+    return { id: id, name: name, bloodRaw: blood, bloodGroup: bt.group, hlaA: hlaA, hlaB: hlaB, hlaDr: hlaDr };
+  }
+
+  function recipient(id, name, blood, hlaA, hlaB, hlaDr, waitlistDate, pediatric, urgency, pra) {
+    var bt = parseBloodType(blood);
+    return {
+      id: id, name: name, bloodRaw: blood, bloodGroup: bt.group,
+      hlaA: hlaA, hlaB: hlaB, hlaDr: hlaDr,
+      waitlistDate: waitlistDate, pediatric: pediatric, urgency: urgency, pra: pra
+    };
+  }
+
+  var SAMPLE_DONORS = [
+    donor("D-001", "Donor A", "O+", ["A1", "A2"], ["B7", "B8"], ["DR3", "DR4"]),
+    donor("D-002", "Donor B", "AB-", ["A2", "A24"], ["B44", "B62"], ["DR1", "DR15"])
+  ];
+
+  function sampleRecipients() {
+    return [
+      recipient("R-001", "Recipient 1", "O+", ["A1", "A2"], ["B7", "B44"], ["DR3", "DR15"], "2023-06-01", false, 70, 10),
+      recipient("R-002", "Recipient 2", "A+", ["A2", "A24"], ["B8", "B62"], ["DR4", "DR1"], "2021-03-15", false, 40, 5),
+      recipient("R-003", "Recipient 3 (pediatric)", "O-", ["A1", "A3"], ["B7", "B27"], ["DR3", "DR7"], "2024-01-10", true, 60, 15),
+      recipient("R-004", "Recipient 4", "B+", ["A9", "A11"], ["B12", "B18"], ["DR11", "DR13"], "2020-11-20", false, 85, 90),
+      recipient("R-005", "Recipient 5", "AB+", ["A2", "A2"], ["B44", "B7"], ["DR15", "DR3"], "2022-08-05", false, 55, 20)
+    ];
+  }
+
+  /* ---------------- app state ---------------- */
+
+  var state = {
+    donors: SAMPLE_DONORS,
+    activeDonorId: SAMPLE_DONORS[0].id,
+    customDonor: null,
+    useCustomDonor: false,
+    recipients: sampleRecipients(),
+    openCandidateId: null,
+    nextCustomId: 6
+  };
+
+  function activeDonor() {
+    if (state.useCustomDonor && state.customDonor) return state.customDonor;
+    var found = state.donors.filter(function (d) { return d.id === state.activeDonorId; })[0];
+    return found || state.donors[0];
+  }
+
+  /* ---------------- rendering ---------------- */
+
+  var donorGrid = document.getElementById("donorGrid");
+  var rankedList = document.getElementById("rankedList");
+  var rankedCount = document.getElementById("rankedCount");
+  var excludedList = document.getElementById("excludedList");
+  var excludedCount = document.getElementById("excludedCount");
+  var excludedSection = document.getElementById("excludedSection");
+
+  function el(tag, attrs, children) {
+    var e = document.createElement(tag);
+    attrs = attrs || {};
+    Object.keys(attrs).forEach(function (k) {
+      if (k === "class") e.className = attrs[k];
+      else if (k === "text") e.textContent = attrs[k];
+      else if (k === "html") e.innerHTML = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    });
+    (children || []).forEach(function (c) { if (c) e.appendChild(c); });
+    return e;
+  }
+
+  function renderDonors() {
+    donorGrid.innerHTML = "";
+    state.donors.forEach(function (d) {
+      var isActive = !state.useCustomDonor && d.id === state.activeDonorId;
+      var card = el("button", {
+        class: "donor-card",
+        type: "button",
+        "data-active": isActive ? "true" : "false"
+      }, [
+        el("div", { class: "tag", text: d.id }),
+        el("div", { class: "name", text: d.name }),
+        el("div", { class: "chips" }, [
+          el("span", { class: "blood-chip", text: d.bloodRaw }),
+          el("span", { class: "chip", text: "A " + d.hlaA.join("/") }),
+          el("span", { class: "chip", text: "B " + d.hlaB.join("/") }),
+          el("span", { class: "chip", text: "DR " + d.hlaDr.join("/") })
+        ])
+      ]);
+      card.addEventListener("click", function () {
+        state.useCustomDonor = false;
+        state.activeDonorId = d.id;
+        renderAll();
+      });
+      donorGrid.appendChild(card);
+    });
+  }
+
+  function readCustomDonorForm() {
+    function v(id) { return document.getElementById(id).value.trim(); }
+    var blood = document.getElementById("cdBlood").value;
+    var bt = parseBloodType(blood);
+    return {
+      id: "custom", name: "Custom donor", bloodRaw: blood, bloodGroup: bt.group,
+      hlaA: [v("cdA1") || "A?", v("cdA2") || "A?"],
+      hlaB: [v("cdB1") || "B?", v("cdB2") || "B?"],
+      hlaDr: [v("cdDR1") || "DR?", v("cdDR2") || "DR?"]
+    };
+  }
+
+  function mismatchDots(count) {
+    var wrap = el("div", { class: "mismatch-dots" });
+    for (var i = 0; i < MAX_MISMATCHES; i++) {
+      wrap.appendChild(el("span", { class: "dot" + (i < count ? " filled" : "") }));
+    }
+    return wrap;
+  }
+
+  function candidateRow(item, rank) {
+    var r = item.recipient;
+    var isOpen = state.openCandidateId === r.id;
+    var card = el("div", { class: "candidate" + (isOpen ? " open" : "") });
+
+    var row = el("div", { class: "candidate-row" }, [
+      el("div", { class: "rank mono", text: String(rank) }),
+      el("div", {}, [
+        el("div", { class: "cand-name" }, [document.createTextNode(r.name + " "), el("span", { class: "chevron", text: "›" })]),
+        el("div", { class: "cand-sub" }, [document.createTextNode(r.bloodRaw + " · waiting since " + r.waitlistDate)])
+      ]),
+      mismatchDots(item.mismatches),
+      el("div", { class: "score mono", text: String(item.breakdown.total) }),
+      el("button", { class: "remove-btn", type: "button", "aria-label": "Remove " + r.name, text: "×" })
+    ]);
+
+    row.querySelector(".remove-btn").addEventListener("click", function (evt) {
+      evt.stopPropagation();
+      state.recipients = state.recipients.filter(function (x) { return x.id !== r.id; });
+      renderAll();
+    });
+    row.addEventListener("click", function () {
+      state.openCandidateId = isOpen ? null : r.id;
+      renderAll();
+    });
+
+    var detail = el("div", { class: "candidate-detail" });
+    var bg = el("div", { class: "breakdown-grid" }, [
+      breakdownCell("HLA match", item.breakdown.hla + " pts"),
+      breakdownCell("Time waiting", item.breakdown.wait + " pts"),
+      breakdownCell("Urgency", item.breakdown.urgency + " pts"),
+      breakdownCell("Pediatric", item.breakdown.pediatric + " pts")
+    ]);
+    var loci = el("div", { class: "loci-line" }, [
+      document.createTextNode("HLA-A mismatches: "),
+      el("span", { class: "mono", text: String(item.loci["HLA-A"]) }),
+      document.createTextNode("  ·  HLA-B: "),
+      el("span", { class: "mono", text: String(item.loci["HLA-B"]) }),
+      document.createTextNode("  ·  HLA-DR: "),
+      el("span", { class: "mono", text: String(item.loci["HLA-DR"]) }),
+      document.createTextNode("  ·  urgency " + r.urgency + "/100, PRA " + r.pra + "%")
+    ]);
+    detail.appendChild(bg);
+    detail.appendChild(loci);
+
+    card.appendChild(row);
+    card.appendChild(detail);
+    return card;
+  }
+
+  function breakdownCell(label, value) {
+    return el("div", {}, [
+      el("span", { class: "k", text: label }),
+      el("span", { class: "v", text: value })
+    ]);
+  }
+
+  function renderResults() {
+    var donor = activeDonor();
+    var result = rankCandidates(donor, state.recipients);
+
+    rankedCount.textContent = result.ranked.length + (result.ranked.length === 1 ? " candidate" : " candidates");
+    rankedList.innerHTML = "";
+    if (!result.ranked.length) {
+      rankedList.appendChild(el("div", { class: "empty-note", text: "No eligible recipients for this donor offer." }));
+    } else {
+      result.ranked.forEach(function (item, i) {
+        rankedList.appendChild(candidateRow(item, i + 1));
+      });
+    }
+
+    excludedCount.textContent = result.excluded.length + (result.excluded.length === 1 ? " candidate" : " candidates");
+    excludedList.innerHTML = "";
+    excludedSection.style.display = result.excluded.length ? "" : "none";
+    result.excluded.forEach(function (entry) {
+      var reasonsUl = el("ul", {}, entry.reasons.map(function (reason) { return el("li", { text: reason }); }));
+      excludedList.appendChild(el("div", { class: "excluded-item" }, [
+        el("div", { class: "cand-name", text: entry.recipient.name + " — " + entry.recipient.bloodRaw }),
+        reasonsUl
+      ]));
+    });
+  }
+
+  function renderAll() {
+    renderDonors();
+    renderResults();
+  }
+
+  /* ---------------- custom donor form ---------------- */
+
+  document.getElementById("customDonorDetails").addEventListener("toggle", function (e) {
+    if (e.target.open) {
+      state.useCustomDonor = true;
+      state.customDonor = readCustomDonorForm();
+      renderAll();
+    }
+  });
+  ["cdBlood", "cdA1", "cdA2", "cdB1", "cdB2", "cdDR1", "cdDR2"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", function () {
+      state.useCustomDonor = true;
+      state.customDonor = readCustomDonorForm();
+      renderAll();
+    });
+  });
+
+  /* ---------------- add-candidate form ---------------- */
+
+  var rUrgency = document.getElementById("rUrgency");
+  var rPra = document.getElementById("rPra");
+  rUrgency.addEventListener("input", function () { document.getElementById("rUrgencyVal").textContent = rUrgency.value; });
+  rPra.addEventListener("input", function () { document.getElementById("rPraVal").textContent = rPra.value; });
+
+  document.getElementById("addCandidateBtn").addEventListener("click", function () {
+    var errBox = document.getElementById("formErr");
+    function v(id) { return document.getElementById(id).value.trim(); }
+
+    var name = v("rName") || ("Recipient " + (state.recipients.length + 1));
+    var blood = document.getElementById("rBlood").value;
+    var a1 = v("rA1"), a2 = v("rA2"), b1 = v("rB1"), b2 = v("rB2"), dr1 = v("rDR1"), dr2 = v("rDR2");
+    var waitDate = v("rWait");
+
+    if (!a1 || !a2 || !b1 || !b2 || !dr1 || !dr2) {
+      errBox.textContent = "Every HLA-A/B/DR field needs an allele code (both alleles).";
+      errBox.style.display = "block";
+      return;
+    }
+    if (!waitDate) {
+      errBox.textContent = "Pick a waitlist start date.";
+      errBox.style.display = "block";
+      return;
+    }
+    errBox.style.display = "none";
+
+    var bt = parseBloodType(blood);
+    var newRecipient = {
+      id: "custom-" + state.nextCustomId++,
+      name: name, bloodRaw: blood, bloodGroup: bt.group,
+      hlaA: [a1, a2], hlaB: [b1, b2], hlaDr: [dr1, dr2],
+      waitlistDate: waitDate,
+      pediatric: document.getElementById("rPediatric").value === "true",
+      urgency: parseInt(rUrgency.value, 10),
+      pra: parseInt(rPra.value, 10)
+    };
+    state.recipients.push(newRecipient);
+    ["rName", "rA1", "rA2", "rB1", "rB2", "rDR1", "rDR2", "rWait"].forEach(function (id) {
+      document.getElementById(id).value = "";
+    });
+    renderAll();
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    state.recipients = sampleRecipients();
+    state.openCandidateId = null;
+    document.getElementById("formErr").style.display = "none";
+    renderAll();
+  });
+
+  /* ---------------- theme toggle ---------------- */
+
+  var themeToggle = document.getElementById("themeToggle");
+  var STORAGE_KEY = "hla-console-theme";
+  function applyTheme(mode) {
+    if (mode) {
+      document.documentElement.setAttribute("data-theme", mode);
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+    themeToggle.textContent = (mode === "dark") ? "Light mode" : "Dark mode";
+  }
+  themeToggle.addEventListener("click", function () {
+    var current = document.documentElement.getAttribute("data-theme");
+    var next = current === "dark" ? "light" : "dark";
+    applyTheme(next);
+    try { localStorage.setItem(STORAGE_KEY, next); } catch (e) {}
+  });
+  (function initTheme() {
+    var saved = null;
+    try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (saved) applyTheme(saved);
+  })();
+
+  /* ---------------- default waitlist date for the add form ---------------- */
+  document.getElementById("rWait").value = new Date().toISOString().slice(0, 10);
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
